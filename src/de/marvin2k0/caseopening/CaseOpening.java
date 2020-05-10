@@ -148,7 +148,7 @@ public class CaseOpening extends JavaPlugin implements Listener
                 double z = radius * Math.sin(t);
 
                 loc.add(x, y, z);
-                loc.getWorld().spawnParticle(org.bukkit.Particle.END_ROD, loc, 3, 0.5, 1, 0.5, 0);
+                loc.getWorld().spawnParticle(org.bukkit.Particle.FIREWORKS_SPARK, loc, 3, 0.5, 1, 0.5, 0);
                 loc.subtract(x, y, z);
                 timer++;
 
