@@ -2,7 +2,6 @@ package de.marvin2k0.caseopening;
 
 import de.marvin2k0.caseopening.utils.Locations;
 import net.minecraft.server.v1_15_R1.*;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.craftbukkit.v1_15_R1.CraftWorld;
@@ -25,7 +24,8 @@ import java.util.*;
 public class CaseOpening extends JavaPlugin implements Listener
 {
     private static ArrayList<Location> inUse = new ArrayList<>();
-    private List<String> materials;
+    private HashMap<String, Integer> materials;
+    private ArrayList<String> names;
     private Random random;
 
     @Override
@@ -34,14 +34,14 @@ public class CaseOpening extends JavaPlugin implements Listener
         Locations.setUp(this);
 
         random = new Random();
-        materials = new ArrayList<>();
-        materials.add("BLAZE_ROD");
+        materials = new HashMap<>();
+        names = new ArrayList<>();
 
         getConfig().options().copyDefaults(true);
-        getConfig().addDefault("items", materials);
+        getConfig().addDefault("items", "");
         saveConfig();
 
-        materials = getConfig().getStringList("items");
+        loadItems();
 
         getServer().getPluginManager().registerEvents(this, this);
     }
@@ -170,7 +170,9 @@ public class CaseOpening extends JavaPlugin implements Listener
 
     private void spawnItem(Player player, Location itemLocation)
     {
-        Item item = itemLocation.getWorld().dropItem(itemLocation.add(0.5, 1, 0.5), new ItemStack(getRandomMaterial()));
+        ItemStack price = getRandomMaterial();
+
+        Item item = itemLocation.getWorld().dropItem(itemLocation.add(0.5, 1, 0.5), price);
         item.setVelocity(new Vector(0, 0, 0));
         item.setPickupDelay(Integer.MAX_VALUE);
         item.setGravity(false);
@@ -185,7 +187,7 @@ public class CaseOpening extends JavaPlugin implements Listener
                 item.remove();
                 inUse.remove(itemLocation.subtract(0.5, 1, 0.5));
                 changeEnderChestState(itemLocation, false);
-                giveItem(player, item.getItemStack());
+                giveItem(player, price);
             }
         }.runTaskLater(this, 5 * 20);
     }
@@ -223,9 +225,34 @@ public class CaseOpening extends JavaPlugin implements Listener
         return "§b" + name.trim();
     }
 
-    private Material getRandomMaterial()
+    private void loadItems()
     {
-        Material item = Material.getMaterial(materials.get(random.nextInt(materials.size())));
+        for (Map.Entry<String, Object> entry : getConfig().getConfigurationSection("items").getValues(false).entrySet())
+        {
+            int amount = 1;
+
+            if (getConfig().isSet("items." + entry.getKey() + ".amount"))
+            {
+                amount = getConfig().getInt("items." + entry.getKey() + ".amount");
+            }
+
+            materials.put(entry.getKey(), amount);
+            names.add(entry.getKey());
+        }
+    }
+
+    private ItemStack getRandomMaterial()
+    {
+        Material material = Material.getMaterial(names.get(random.nextInt(materials.size())));
+        int amount = 1;
+
+        if (getConfig().isSet("items." + material.toString() + ".amount"))
+        {
+            amount = getConfig().getInt("items." + material.toString() + ".amount");
+        }
+
+        ItemStack item = new ItemStack(material);
+        item.setAmount(materials.get(material.toString()));
 
         return item;
     }
