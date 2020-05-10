@@ -6,11 +6,14 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.craftbukkit.v1_15_R1.CraftWorld;
+import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -44,6 +47,24 @@ public class CaseOpening extends JavaPlugin implements Listener
     }
 
     @EventHandler
+    public void onBreak(BlockBreakEvent event)
+    {
+        if (event.getBlock().getType() == Material.ENDER_CHEST)
+        {
+            Player player = event.getPlayer();
+            Location loc = event.getBlock().getLocation();
+
+            Collection<org.bukkit.entity.Entity> armorstand = loc.getWorld().getNearbyEntities(loc, 1, 1, 1);
+
+            for (org.bukkit.entity.Entity e : armorstand)
+            {
+                if (e instanceof  ArmorStand)
+                    e.remove();
+            }
+        }
+    }
+
+    @EventHandler
     public void onInteract(PlayerInteractEvent event)
     {
         Player player = event.getPlayer();
@@ -51,8 +72,16 @@ public class CaseOpening extends JavaPlugin implements Listener
         if (event.hasBlock() && event.getClickedBlock().getType() == Material.ENDER_CHEST && event.hasItem() && event.getItem().getType() == Material.BLAZE_ROD && player.hasPermission("case.create"))
         {
             event.setCancelled(true);
+            Location loc = event.getClickedBlock().getLocation();
 
-            Locations.setLocation("chests." + UUID.randomUUID(), event.getClickedBlock().getLocation());
+            Locations.setLocation("chests." + UUID.randomUUID(), loc);
+            ArmorStand armorStand = (ArmorStand) loc.getWorld().spawnEntity(loc.add(0.5, -0.25, 0.5), EntityType.ARMOR_STAND);
+            armorStand.setGravity(false);
+            armorStand.setVisible(false);
+            armorStand.setInvulnerable(true);
+            armorStand.setCustomName("§aTägliche Belohnung");
+            armorStand.setCustomNameVisible(true);
+
             player.sendMessage("§7Die Case wurde erfolgreich erstell!");
             return;
         }
@@ -119,11 +148,11 @@ public class CaseOpening extends JavaPlugin implements Listener
                 double z = radius * Math.sin(t);
 
                 loc.add(x, y, z);
-                loc.getWorld().spawnParticle(org.bukkit.Particle.DRAGON_BREATH, loc, 4, 0.5, 1, 0.5, 0);
+                loc.getWorld().spawnParticle(org.bukkit.Particle.END_ROD, loc, 3, 0.5, 1, 0.5, 0);
                 loc.subtract(x, y, z);
                 timer++;
 
-                if (timer >= 10 * 3)
+                if (timer >= 20 * 3)
                 {
                     spawnRandomItem(player, chestLocation);
                     this.cancel();
