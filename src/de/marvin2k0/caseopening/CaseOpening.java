@@ -2,8 +2,11 @@ package de.marvin2k0.caseopening;
 
 import de.marvin2k0.caseopening.utils.Locations;
 import net.minecraft.server.v1_15_R1.*;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
 import org.bukkit.craftbukkit.v1_15_R1.CraftWorld;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.EntityType;
@@ -38,12 +41,43 @@ public class CaseOpening extends JavaPlugin implements Listener
         names = new ArrayList<>();
 
         getConfig().options().copyDefaults(true);
-        getConfig().addDefault("items", "");
+        getConfig().addDefault("items.DIAMOND.amount", 1);
         saveConfig();
 
         loadItems();
 
         getServer().getPluginManager().registerEvents(this, this);
+        getCommand("caseitem").setExecutor(this);
+    }
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args)
+    {
+        if (!(sender instanceof Player))
+        {
+            sender.sendMessage("§cNur fuer Spieler!");
+            return true;
+        }
+
+        Player player = (Player) sender;
+
+        if (player.getItemInHand().getType() == Material.AIR)
+        {
+            player.sendMessage("§7Du musst ein §cItem in der Hand §7haben.");
+            return true;
+        }
+
+        ItemStack item = player.getItemInHand();
+
+        addItem(item);
+        player.sendMessage("§aDas Item wurde erfolgreich gespeichert!");
+        return true;
+    }
+
+    private void addItem(ItemStack item)
+    {
+        getConfig().set("items." + item.getType().toString() + ".amount", item.getAmount());
+        saveConfig();
     }
 
     @EventHandler
@@ -227,29 +261,32 @@ public class CaseOpening extends JavaPlugin implements Listener
 
     private void loadItems()
     {
-        for (Map.Entry<String, Object> entry : getConfig().getConfigurationSection("items").getValues(false).entrySet())
+        try
         {
-            int amount = 1;
-
-            if (getConfig().isSet("items." + entry.getKey() + ".amount"))
+            for (Map.Entry<String, Object> entry : getConfig().getConfigurationSection("items").getValues(false).entrySet())
             {
-                amount = getConfig().getInt("items." + entry.getKey() + ".amount");
-            }
+                int amount = 1;
 
-            materials.put(entry.getKey(), amount);
-            names.add(entry.getKey());
+                if (getConfig().isSet("items." + entry.getKey() + ".amount"))
+                {
+                    amount = getConfig().getInt("items." + entry.getKey() + ".amount");
+                }
+
+                System.out.println(entry.getKey() + " " + amount);
+
+                materials.put(entry.getKey(), amount);
+                names.add(entry.getKey());
+            }
+        }
+        catch (Exception e)
+        {
+            Bukkit.getConsoleSender().sendMessage("§4BITTE FUEGE MINDESTENS EIN ITEM HINZU!");
         }
     }
 
     private ItemStack getRandomMaterial()
     {
-        Material material = Material.getMaterial(names.get(random.nextInt(materials.size())));
-        int amount = 1;
-
-        if (getConfig().isSet("items." + material.toString() + ".amount"))
-        {
-            amount = getConfig().getInt("items." + material.toString() + ".amount");
-        }
+        Material material = Material.getMaterial(names.get(random.nextInt(names.size())));
 
         ItemStack item = new ItemStack(material);
         item.setAmount(materials.get(material.toString()));

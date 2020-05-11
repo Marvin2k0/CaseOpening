@@ -2,3 +2,6 @@ name: CaseOpening_by_Marvin2k0
 author: Marvin2k0
 version: 9.05.2020
 main: de.marvin2k0.caseopening.CaseOpening
+commands:
+  caseitem:
+    permission: case.item
